@@ -24,9 +24,18 @@ var Page = db.define( 'Page', {
 
 },	
 	{
-		getterMethods: { /* Page Getter Functions */
-			route: function() { return '/wiki/' + this.urlTitle; }
+		hooks: {
+			beforeValidate: function(page){
+				if(page.title){
+					page.urlTitle = page.title.replace(/\s+/g, '_').replace(/\W/g, '');
+				}
+			}
 		},
+		getterMethods: { /* Page Getter Functions */
+			route: function() { 
+				return '/wiki/' + this.urlTitle; 
+			}
+		}, 
 
 		setterMethods: { /* Page Setter Functions */
 
@@ -48,8 +57,17 @@ var User = db.define( 'User', {
 			isEmail: true
 		}
 	}
+},
+	{
+		getterMethods: {
+			route: function() {
+				return '/users/' + this.id;
+			}
+		},
+	}
+);
 
-});
+Page.belongsTo(User, { as: 'author' });
 
 module.exports = {
 	Page: Page,

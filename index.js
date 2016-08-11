@@ -11,13 +11,14 @@ var chalk = require('chalk');
 
 
 var wikiRoutes = require('./routes/wiki').wikiRouter;
+var userRoutes = require('./routes/users').userRoutes;
 var models = require('./models');
 var Page = models.Page;
 var User = models.User;
 
 var app = express();
 
-
+app.use(express.static('public'));
 
 app.engine('html', swig.renderFile );
 swig.setDefaults({ cache: false});
@@ -30,6 +31,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use('/wiki', wikiRoutes);
+app.use('/users', userRoutes);
 
 app.get('/', function(req, res, next ){
 	res.send('Welcome to the home page!');
@@ -39,16 +41,35 @@ function ServerSpeak(str){
 	console.log(chalk.blue(str));
 };
 
-User.sync({cache: false})
-	.then( function( resolved, rejected) {
-		return Page.sync({cahce: false});
-	})
-	.then( function( resolved, rejected) {
+// This a an error catcher for all or our errors
+app.use( function( err, req, res, next){
+	console.error(err);
+	res.status(500).send(err.message);
+})
+
+var userDBSyncPromise = User.sync({force: false});
+var pageDBSyncPromise = Page.sync({force: false});
+
+Promise.all([ userDBSyncPromise, pageDBSyncPromise])
+	.then( function(resolvedArray){
 		app.listen( 3000, function(){
-			ServerSpeak("Sever is up on port 3000...")
+			ServerSpeak("Sever is up on port 3000...");
 		})
 	})
-	.catch(function(rejected){
+	.catch( function( rejected ){
 		throw new Error(rejected);
 	});
+
+// User.sync({force: false})
+// 	.then( function( resolved, rejected) {
+// 		return Page.sync({force: false});
+// 	})
+// 	.then( function( resolved, rejected) {
+// 		app.listen( 3000, function(){
+// 			ServerSpeak("Sever is up on port 3000...")
+// 		})
+// 	})
+// 	.catch(function(rejected){
+// 		throw new Error(rejected);
+// 	});
 
